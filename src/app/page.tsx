@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { ConceptResponse } from "@/types/index";
+import { ConceptResponse } from "@/types";
+
+// Set a fallback API URL if the environment variable is undefined
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function Home() {
   const [concept, setConcept] = useState<string>("");
@@ -20,9 +23,9 @@ export default function Home() {
   const fetchExplanation = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/explain`
-      );
+      console.log("Fetching from:", `${API_URL}/api/explain`); // Add this for debugging
+
+      const response = await fetch(`${API_URL}/api/explain`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch explanation");
