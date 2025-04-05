@@ -13,6 +13,8 @@ import "highlight.js/styles/github.css";
 
 // Set a fallback API URL if the environment variable is undefined
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// const API_URL =
+//   process.env.NEXT_PUBLIC_API_URL_LOCAL || "http://localhost:8000";
 
 export default function Home() {
   const [concept, setConcept] = useState<string>("");
