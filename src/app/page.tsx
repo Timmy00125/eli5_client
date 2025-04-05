@@ -12,7 +12,7 @@ import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 
 // Set a fallback API URL if the environment variable is undefined
-const API_URL = "https://eli5-server.onrender.com";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Home() {
   const [concept, setConcept] = useState<string>("");
