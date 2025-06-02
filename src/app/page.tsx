@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Save, CheckCircle } from "lucide-react";
 import { ConceptResponse } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -22,20 +23,46 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [useFallback, setUseFallback] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [saved, setSaved] = useState<boolean>(false);
+
+  const { isAuthenticated, token } = useAuth();
 
   useEffect(() => {
     // Fetch the explanation when the component mounts
     fetchExplanation();
   }, [useFallback]);
 
+  useEffect(() => {
+    // Reset saved state when concept changes
+    setSaved(false);
+  }, [concept]);
+
   const fetchExplanation = async () => {
     setLoading(true);
     try {
-      // Use the fallback endpoint if the main one failed previously
-      const endpoint = useFallback ? "/api/fallback-explain" : "/api/explain";
+      // Use authenticated endpoint if user is logged in, otherwise use public endpoint
+      const endpoint =
+        isAuthenticated && !useFallback
+          ? "/api/explain/authenticated"
+          : useFallback
+          ? "/api/fallback-explain"
+          : "/api/explain";
+
       console.log("Fetching from:", `${API_URL}${endpoint}`);
 
-      const response = await fetch(`${API_URL}${endpoint}`);
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+
+      // Add authorization header if authenticated
+      if (isAuthenticated && token && !useFallback) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        headers,
+      });
 
       if (!response.ok) {
         if (!useFallback && response.status === 500) {
@@ -58,6 +85,38 @@ export default function Home() {
     }
   };
 
+  const saveToHistory = async () => {
+    if (!isAuthenticated || !token || !concept || !explanation) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`${API_URL}/api/history`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          concept,
+          explanation,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save to history");
+      }
+
+      setSaved(true);
+      // Auto-hide the saved indicator after 3 seconds
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error("Error saving to history:", err);
+      setError("Failed to save to history");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const retryMainEndpoint = () => {
     setUseFallback(false);
     fetchExplanation();
@@ -66,12 +125,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <main className="container mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold text-center mb-8 text-blue-600">
-          LearnInFive
-        </h1>
-        <p className="text-lg text-center mb-12 text-gray-600">
-          Computer Science Concepts Explained Like You&apos;re Five
-        </p>
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4 text-blue-600">LearnInFive</h1>
+          <p className="text-lg text-gray-600">
+            Computer Science Concepts Explained Like You&apos;re Five
+          </p>
+          {isAuthenticated && (
+            <p className="text-sm text-blue-600 mt-2">
+              Signed in - your explanations will be saved to your history!
+            </p>
+          )}
+        </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-16">
@@ -85,9 +149,41 @@ export default function Home() {
         ) : (
           <Card className="max-w-4xl mx-auto shadow-lg">
             <CardHeader className="bg-blue-500 text-white">
-              <CardTitle className="text-2xl text-center">{concept}</CardTitle>
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-2xl flex-1">{concept}</CardTitle>
+                {isAuthenticated && concept && explanation && (
+                  <div className="ml-4">
+                    {saved ? (
+                      <div className="flex items-center gap-2 text-green-200">
+                        <CheckCircle className="h-5 w-5" />
+                        <span className="text-sm">Saved!</span>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={saveToHistory}
+                        disabled={saving}
+                        className="text-blue-500 bg-white hover:bg-gray-100"
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-1" />
+                            Save
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
               {useFallback && (
-                <p className="text-white text-sm text-center mt-2">
+                <p className="text-white text-sm mt-2">
                   Using backup explanation
                   <Button
                     variant="outline"
@@ -194,6 +290,23 @@ export default function Home() {
                 >
                   {explanation}
                 </ReactMarkdown>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-gray-200 flex justify-center">
+                <Button
+                  onClick={fetchExplanation}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Loading...
+                    </>
+                  ) : (
+                    "Get New Explanation"
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
