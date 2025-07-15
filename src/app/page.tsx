@@ -13,7 +13,7 @@ import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 
 // Set a fallback API URL if the environment variable is undefined
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 // const API_URL =
 //   process.env.NEXT_PUBLIC_API_URL_LOCAL || "http://localhost:8000";
 
@@ -41,24 +41,16 @@ export default function Home() {
   const fetchExplanation = async () => {
     setLoading(true);
     try {
-      // Use authenticated endpoint if user is logged in, otherwise use public endpoint
-      const endpoint =
-        isAuthenticated && !useFallback
-          ? "/api/explain/authenticated"
-          : useFallback
-          ? "/api/fallback-explain"
-          : "/api/explain";
+      // Use fallback endpoint if specified, otherwise use main endpoint
+      const endpoint = useFallback ? "/api/fallback-explain" : "/api/explain";
 
-      console.log("Fetching from:", `${API_URL}${endpoint}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log("Fetching from:", `${API_URL}${endpoint}`);
+      }
 
       const headers: HeadersInit = {
         "Content-Type": "application/json",
       };
-
-      // Add authorization header if authenticated
-      if (isAuthenticated && token && !useFallback) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
 
       const response = await fetch(`${API_URL}${endpoint}`, {
         headers,

@@ -38,7 +38,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup";
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const requestData = isLogin
         ? ({
             email: formData.email,

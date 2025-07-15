@@ -17,7 +17,7 @@ export default function HistoryPage() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const { user, token, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -71,7 +71,7 @@ export default function HistoryPage() {
     });
   };
 
-  const toggleExpanded = (id: string) => {
+  const toggleExpanded = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
@@ -216,6 +216,12 @@ export default function HistoryPage() {
                               {...props}
                             />
                           ),
+                          pre: ({ node, ...props }) => (
+                            <pre
+                              className="my-4 p-3 bg-gray-900 text-white overflow-x-auto rounded-lg"
+                              {...props}
+                            />
+                          ),
                           code: ({
                             node,
                             inline,
@@ -238,14 +244,12 @@ export default function HistoryPage() {
                                 </code>
                               );
                             }
+                            // For block code, just return the code element
+                            // ReactMarkdown will wrap it in <pre> automatically
                             return (
-                              <div className="my-4 rounded-lg overflow-hidden">
-                                <pre className="p-3 bg-gray-900 text-white overflow-x-auto">
-                                  <code className={className} {...props}>
-                                    {children}
-                                  </code>
-                                </pre>
-                              </div>
+                              <code className={className} {...props}>
+                                {children}
+                              </code>
                             );
                           },
                         }}

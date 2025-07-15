@@ -5,7 +5,7 @@ export interface ConceptResponse {
 
 // Authentication types
 export interface User {
-  id: string;
+  id: number;
   username: string;
   email: string;
 }
@@ -33,11 +33,11 @@ export interface AuthError {
 
 // History types
 export interface HistoryEntry {
-  id: string;
+  id: number;
   concept: string;
   explanation: string;
   created_at: string;
-  user_id: string;
+  user_id: number;
 }
 
 export interface HistoryResponse {
